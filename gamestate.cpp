@@ -1,15 +1,19 @@
 #include <iostream>
 #include <iomanip>
-#include <string>
 #include <conio.h>
 #include <fstream>
+#include "constants.hpp"
 #include "gamestate.hpp"
 
 GameState::GameState() : m_current_day{ 1 }, m_gold{ 0.0 }, m_items_recieved_today{ false }, m_item_count{ 0 }, m_warehouse{ } {}
 
-
 void GameState::receivedailyItems()
 {
+	enum Action {
+		RECIEVE = '1',
+		SELL = '0'
+	};
+
 	if (m_items_recieved_today) {
 		std::cout << "Daily items already recieved" << std::endl;
 		std::cout << "Press any key to continue..." << std::endl;
@@ -18,21 +22,16 @@ void GameState::receivedailyItems()
 	}
 	m_items_recieved_today = true;
 
-	enum Action {
-		RECIEVE = 49,
-		SELL = 48
-	};
-
 	std::cout << std::endl;
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < gameplay_constants::ITEMS_PER_DAY; i++) {
 		MagicItem item{ GenerateItem(m_current_day) };
-		std::cout << std::setw(22) << std::left << item.getName() << " | " <<
-			std::setw(6) << std::left << item.getType() << " | " << 
-			item.getColor() << std::setw(6) << std::left << item.getRarity() << "\33[0m => " << item.getBasePrice() << std::endl;
+		std::cout << std::setw(technical_constants::NAME_OFFSET) << std::left << item.getName() << " | " <<
+			std::setw(technical_constants::TYPE_OFFSET) << std::left << item.getType() << " | " <<
+			item.getColor() << std::setw(technical_constants::RARITY_OFFSET) << std::left << item.getRarity() << "\33[0m => " << item.getBasePrice() << std::endl;
 		std::cout << "[1] Recieve" << std::endl;
 		std::cout << "[0] Sell for " << item.getBasePrice() / 2 << std::endl;
 		for (bool inChoice = true; inChoice;) {
-			switch ((Action)_getch()) {
+			switch (_getch()) {
 			case RECIEVE:
 				if (m_item_count == 5) {
 					m_gold += item.getBasePrice() / 2;
@@ -49,6 +48,9 @@ void GameState::receivedailyItems()
 				m_gold += item.getBasePrice() / 2;
 				inChoice = false;
 				break;
+
+			default:
+				break;
 			}
 		}
 	}
@@ -63,9 +65,9 @@ void GameState::showWarehouse()
 		std::cout << "Warehouse [select item to sell it]:" << std::endl;
 		for (int i = 0; i < m_item_count; i++)
 			std::cout << (m_warehouse[i].getDayAdded() - m_current_day == 0 ? "\33[31m" : "\33[0m") << "[" << i + 1 << "] " << "\33[0m" <<
-			std::setw(22) << std::left << m_warehouse[i].getName() << " | " <<
-			std::setw(6) << std::left << m_warehouse[i].getType() << " | " <<
-			m_warehouse[i].getColor() << std::setw(6) << std::left << m_warehouse[i].getRarity() << "\33[0m | Day " << m_warehouse[i].getDayAdded() << " => " << m_warehouse[i].currentValue(m_current_day) << std::endl;
+			std::setw(technical_constants::NAME_OFFSET) << std::left << m_warehouse[i].getName() << " | " <<
+			std::setw(technical_constants::TYPE_OFFSET) << std::left << m_warehouse[i].getType() << " | " <<
+			m_warehouse[i].getColor() << std::setw(technical_constants::RARITY_OFFSET) << std::left << m_warehouse[i].getRarity() << "\33[0m | Day " << m_warehouse[i].getDayAdded() << " => " << m_warehouse[i].currentValue(m_current_day) << std::endl;
 		std::cout << std::endl << "[0] Return" << std::endl;
 		for (bool inChoice = true; inChoice;) {
 			char input = _getch();
@@ -73,7 +75,7 @@ void GameState::showWarehouse()
 				sellFromWarehouse(input - '0' - 1);
 				inChoice = false;
 			}
-			else if (input - '0' == 0) {
+			else if (input == '0' || input == 27) {
 				inChoice = false;
 				inWarehouse = false;
 			}

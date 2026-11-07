@@ -31,9 +31,9 @@ private:
 };
 
 struct RarityInfo {
-	const char* name;
+	const std::string name;
 	double base_price;
-	const char* color;
+	const std::string color;
 };
 
 MagicItem GenerateItem(int current_day);
