@@ -1,9 +1,10 @@
-﻿#pragma once
+#pragma once
 
 #ifndef MAGICITEM_HPP
 #define MAGICITEM_HPP
 
 #include <string>
+#include <random>
 
 class MagicItem {
 
@@ -36,6 +37,6 @@ struct RarityInfo {
 	const std::string color;
 };
 
-MagicItem GenerateItem(int current_day);
+MagicItem GenerateItem(int current_day, std::mt19937& rng);
 
 #endif // MAGICITEM_HPP

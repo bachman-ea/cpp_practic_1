@@ -11,8 +11,8 @@ int main()
         END_DAY = '3',
         SAVE_GAME = '4',
         LOAD_GAME = '5',
-        EXIT = '0',
-        ESCAPE = 27
+        EXIT = input_constants::KEY_RETURN,
+        ESCAPE = input_constants::KEY_ESCAPE
     };
 
     GameState gameState{};

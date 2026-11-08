@@ -2,10 +2,18 @@
 #include <iomanip>
 #include <conio.h>
 #include <fstream>
+#include <random>
 #include "constants.hpp"
 #include "gamestate.hpp"
 
-GameState::GameState() : m_current_day{ 1 }, m_gold{ 0.0 }, m_items_recieved_today{ false }, m_item_count{ 0 }, m_warehouse{ } {}
+GameState::GameState()
+	: m_current_day{ gameplay_constants::START_DAY },
+	  m_gold{ gameplay_constants::START_GOLD },
+	  m_items_recieved_today{ false },
+	  m_item_count{ 0 },
+	  m_warehouse{ },
+	  m_rng{ std::random_device{}() }
+{}
 
 void GameState::receivedailyItems()
 {
@@ -24,18 +32,18 @@ void GameState::receivedailyItems()
 
 	std::cout << std::endl;
 	for (int i = 0; i < gameplay_constants::ITEMS_PER_DAY; i++) {
-		MagicItem item{ GenerateItem(m_current_day) };
+		MagicItem item{ GenerateItem(m_current_day, m_rng) };
 		std::cout << std::setw(technical_constants::NAME_OFFSET) << std::left << item.getName() << " | " <<
 			std::setw(technical_constants::TYPE_OFFSET) << std::left << item.getType() << " | " <<
 			item.getColor() << std::setw(technical_constants::RARITY_OFFSET) << std::left << item.getRarity() << "\33[0m => " << item.getBasePrice() << std::endl;
 		std::cout << "[1] Recieve" << std::endl;
-		std::cout << "[0] Sell for " << item.getBasePrice() / 2 << std::endl;
+		std::cout << "[0] Sell for " << item.getBasePrice() * gameplay_constants::INSTANT_SELL_COEFF << std::endl;
 		for (bool inChoice = true; inChoice;) {
 			switch (_getch()) {
 			case RECIEVE:
-				if (m_item_count == 5) {
-					m_gold += item.getBasePrice() / 2;
-					std::cout << "Warehouse is full, item was selled for " << item.getBasePrice() / 2 << std::endl;
+				if (m_item_count == gameplay_constants::WAREHOUSE_CAPACITY) {
+					m_gold += item.getBasePrice() * gameplay_constants::INSTANT_SELL_COEFF;
+					std::cout << "Warehouse is full, item was selled for " << item.getBasePrice() * gameplay_constants::INSTANT_SELL_COEFF << std::endl;
 				}
 				else {
 					m_warehouse[m_item_count] = item;
@@ -45,7 +53,7 @@ void GameState::receivedailyItems()
 				break;
 
 			case SELL:
-				m_gold += item.getBasePrice() / 2;
+				m_gold += item.getBasePrice() * gameplay_constants::INSTANT_SELL_COEFF;
 				inChoice = false;
 				break;
 
@@ -64,7 +72,7 @@ void GameState::showWarehouse()
 		std::system("cls");
 		std::cout << "Warehouse [select item to sell it]:" << std::endl;
 		for (int i = 0; i < m_item_count; i++)
-			std::cout << (m_warehouse[i].getDayAdded() - m_current_day == 0 ? "\33[31m" : "\33[0m") << "[" << i + 1 << "] " << "\33[0m" <<
+			std::cout << (m_warehouse[i].getDayAdded() == m_current_day ? "\33[31m" : "\33[0m") << "[" << i + 1 << "] " << "\33[0m" <<
 			std::setw(technical_constants::NAME_OFFSET) << std::left << m_warehouse[i].getName() << " | " <<
 			std::setw(technical_constants::TYPE_OFFSET) << std::left << m_warehouse[i].getType() << " | " <<
 			m_warehouse[i].getColor() << std::setw(technical_constants::RARITY_OFFSET) << std::left << m_warehouse[i].getRarity() << "\33[0m | Day " << m_warehouse[i].getDayAdded() << " => " << m_warehouse[i].currentValue(m_current_day) << std::endl;
@@ -75,7 +83,7 @@ void GameState::showWarehouse()
 				sellFromWarehouse(input - '0' - 1);
 				inChoice = false;
 			}
-			else if (input == '0' || input == 27) {
+			else if (input == input_constants::KEY_RETURN || input == input_constants::KEY_ESCAPE) {
 				inChoice = false;
 				inWarehouse = false;
 			}
@@ -88,7 +96,7 @@ void GameState::sellFromWarehouse(int slot)
 	if (0 <= slot && slot <= (m_item_count - 1))
 		if (m_warehouse[slot].getDayAdded() < m_current_day) {
 			m_gold += m_warehouse[slot].currentValue(m_current_day);
-			for (int i = slot; i < m_item_count; i++)
+			for (int i = slot; i < m_item_count - 1; i++)
 				m_warehouse[i] = m_warehouse[i + 1];
 			m_item_count--;
 		}

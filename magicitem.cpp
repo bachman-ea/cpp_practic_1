@@ -4,7 +4,14 @@
 
 MagicItem::MagicItem() : m_name{ "" }, m_type{ "" }, m_rarity{ "" }, m_base_price{ 0.0 }, m_day_added{ 0 }, m_color{ "" } {}
 
-MagicItem::MagicItem(std::string name, std::string type, std::string rarity, double base_price, int current_day, std::string color) : m_name{ std::move(name) }, m_type{ std::move(type) }, m_rarity{ std::move(rarity) }, m_base_price{ std::move(base_price) }, m_day_added{ std::move(current_day) }, m_color{ std::move(color) } {}
+MagicItem::MagicItem(std::string name, std::string type, std::string rarity, double base_price, int current_day, std::string color)
+	: m_name{ std::move(name) },
+	  m_type{ std::move(type) },
+	  m_rarity{ std::move(rarity) },
+	  m_base_price{ base_price },
+	  m_day_added{ current_day },
+	  m_color{ std::move(color) }
+{}
 
 double MagicItem::currentValue(int current_day) const
 {
@@ -41,25 +48,17 @@ const std::string& MagicItem::getColor() const
 	return m_color;
 }
 
-MagicItem GenerateItem(int current_day)
+MagicItem GenerateItem(int current_day, std::mt19937& rng)
 {
-	std::vector<std::string> types;
-	if (std::size(types) == 0) {
-		types.reserve(gameplay_constants::NAMES.size());
-		for (auto const& pair : gameplay_constants::NAMES)
-			types.push_back(pair.first);
-	}
+	std::uniform_int_distribution<int> dist_rarity(0, static_cast<int>(std::size(gameplay_constants::RARITIES)) - 1);
+	const RarityInfo& rarity_info = gameplay_constants::RARITIES[dist_rarity(rng)];
 
-	std::mt19937 gen(std::random_device{}());
+	std::uniform_int_distribution<int> dist_type(0, static_cast<int>(std::size(gameplay_constants::ITEM_TYPES)) - 1);
+	const std::string& type = gameplay_constants::ITEM_TYPES[dist_type(rng)];
 
-	std::uniform_int_distribution<int> dist_rarity(0, std::size(gameplay_constants::RARITIES) - 1);
-	const RarityInfo& rarity_info = gameplay_constants::RARITIES[dist_rarity(gen)];
+	const auto& names_list = gameplay_constants::NAMES.at(type);
+	std::uniform_int_distribution<int> dist_name(0, static_cast<int>(names_list.size()) - 1);
+	int name_idx = dist_name(rng);
 
-	std::uniform_int_distribution<int> dist_type(0, std::size(types) - 1);
-	int type_idx = dist_type(gen);
-
-	std::uniform_int_distribution<int> dist_name(0, std::size(gameplay_constants::NAMES.at(types[type_idx])) - 1);
-	int name_idx = dist_name(gen);
-
-	return MagicItem{ gameplay_constants::NAMES.at(types[type_idx])[name_idx], types[type_idx], rarity_info.name, rarity_info.base_price, current_day, rarity_info.color };
+	return MagicItem{ names_list[name_idx], type, rarity_info.name, rarity_info.base_price, current_day, rarity_info.color };
 }
